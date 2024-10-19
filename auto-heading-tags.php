@@ -4,6 +4,7 @@ Plugin Name: Auto Heading Tags by Hierarchy
 Description: Asigna automáticamente etiquetas H1, H2 y H3 a los títulos dentro de una publicación según su jerarquía numérica.
 Version: 1.2
 Author: Alexis Olivero
+web: www.oliverodev.com
 */
 
 if (!defined('ABSPATH')) exit; // Evita el acceso directo
