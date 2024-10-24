@@ -70,7 +70,7 @@ class SEOHeadingHierarchy {
     }
 
     private function determine_new_level($current_level) {
-        // Si es el primer encabezado, debe ser H1
+        // Si es el primer encabezado, debe ser siempre un H1
         if (empty($this->used_levels)) {
             $this->used_levels[] = 1;
             $this->last_level = 1;
@@ -89,7 +89,7 @@ class SEOHeadingHierarchy {
 
     private function find_next_available_level($current_level) {
         // Si el nivel actual es menor que el último usado, 
-        // buscar el siguiente nivel disponible
+        // buscar el siguiente nivel disponible en el contenido
         if ($current_level <= $this->last_level) {
             $proposed_level = $this->last_level + 1;
         } else {
