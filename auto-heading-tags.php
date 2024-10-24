@@ -7,90 +7,120 @@ Author: Alexis Olivero
 Web: www.oliverodev.com
 */
 
-if (!defined('ABSPATH')) exit;
-
-// Añadir opciones de debug
-function auto_heading_tags_debug_log($message) {
-    if (WP_DEBUG === true) {
-        error_log('[Auto Heading Tags] ' . $message);
-    }
+// Evitar acceso directo al archivo
+if (!defined('ABSPATH')) {
+    exit;
 }
 
-function auto_heading_tags_by_hierarchy($content) {
-    try {
-        // Verificar si el contenido está vacío
+class SimpleHeadingHierarchy {
+    
+    private static $instance = null;
+    
+    public static function get_instance() {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+    
+    private function __construct() {
+        add_filter('the_content', array($this, 'process_headings'), 99);
+    }
+    
+    public function process_headings($content) {
         if (empty($content)) {
-            auto_heading_tags_debug_log('Contenido vacío');
             return $content;
         }
 
-        // Patrón mejorado que considera atributos HTML
-        $pattern = '/<h([1-6])(.*?)>(.*?)<\/h\1>/i';
+        // Crear un DOM del contenido
+        $dom = new DOMDocument();
         
-        if (!preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
-            auto_heading_tags_debug_log('No se encontraron encabezados');
+        // Preservar espacios en blanco
+        $dom->preserveWhiteSpace = true;
+        
+        // Evitar errores con caracteres especiales
+        $content = mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8');
+        
+        // Suprimir errores de warnings del DOM
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($content, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        // Obtener todos los encabezados
+        $headings = array();
+        for ($i = 1; $i <= 6; $i++) {
+            $tags = $dom->getElementsByTagName('h' . $i);
+            foreach ($tags as $tag) {
+                $headings[] = $tag;
+            }
+        }
+
+        if (empty($headings)) {
             return $content;
         }
 
-        $has_h1 = false;
-        $current_heading_level = 1;
-        $processed_content = $content;
-        
-        // Array para almacenar los reemplazos
-        $replacements = [];
+        // Procesar los encabezados
+        $current_level = 1;
+        $found_h1 = false;
 
-        foreach ($matches as $match) {
-            $original_tag = $match[0];
-            $original_level = (int) $match[1];
-            $attributes = $match[2]; // Preservar atributos HTML
-            $heading_content = $match[3];
+        foreach ($headings as $heading) {
+            // Obtener el nivel actual del encabezado
+            $current_tag = $heading->nodeName;
+            $level = intval(substr($current_tag, 1));
 
-            if ($original_level === 1 && !$has_h1) {
-                $has_h1 = true;
-                continue; // Mantener el primer H1 sin cambios
+            // Manejar el primer H1
+            if ($level === 1 && !$found_h1) {
+                $found_h1 = true;
+                continue;
             }
 
-            // Determinar nuevo nivel
-            if ($original_level <= $current_heading_level) {
-                $current_heading_level++;
+            // Determinar el nuevo nivel
+            if ($found_h1) {
+                if ($level <= $current_level) {
+                    $current_level++;
+                }
+                $new_level = min($current_level, 6);
+            } else {
+                $new_level = $level;
             }
 
-            // Limitar a H6
-            $new_level = min($current_heading_level, 6);
-
-            // Crear nuevo tag preservando atributos
-            $new_tag = "<h{$new_level}{$attributes}>{$heading_content}</h{$new_level}>";
+            // Crear nuevo elemento
+            $new_heading = $dom->createElement('h' . $new_level);
             
-            // Almacenar el reemplazo
-            $replacements[$original_tag] = $new_tag;
+            // Copiar el contenido y atributos
+            while ($heading->childNodes->length > 0) {
+                $new_heading->appendChild($heading->childNodes->item(0));
+            }
+            foreach ($heading->attributes as $attribute) {
+                $new_heading->setAttribute($attribute->name, $attribute->value);
+            }
+
+            // Reemplazar el encabezado original
+            $heading->parentNode->replaceChild($new_heading, $heading);
         }
 
-        // Realizar todos los reemplazos de una vez
-        $processed_content = str_replace(
-            array_keys($replacements),
-            array_values($replacements),
-            $processed_content
-        );
-
-        auto_heading_tags_debug_log('Procesamiento completado exitosamente');
-        return $processed_content;
-
-    } catch (Exception $e) {
-        auto_heading_tags_debug_log('Error: ' . $e->getMessage());
-        return $content; // Devolver contenido original en caso de error
+        // Obtener el HTML resultante
+        $new_content = $dom->saveHTML();
+        
+        // Limpiar el HTML resultante
+        $new_content = preg_replace('/^<!DOCTYPE.+?>/', '', str_replace(array('<html>', '</html>', '<body>', '</body>'), array('', '', '', ''), $new_content));
+        
+        return trim($new_content);
     }
 }
 
-// Añadir el filtro con prioridad específica
-add_filter('the_content', 'auto_heading_tags_by_hierarchy', 20);
+// Inicializar el plugin
+function initialize_simple_heading_hierarchy() {
+    SimpleHeadingHierarchy::get_instance();
+}
+add_action('plugins_loaded', 'initialize_simple_heading_hierarchy');
 
-// Función de activación del plugin
+// Activación del plugin
 register_activation_hook(__FILE__, function() {
-    auto_heading_tags_debug_log('Plugin activado');
-});
-
-// Función de desactivación del plugin
-register_deactivation_hook(__FILE__, function() {
-    auto_heading_tags_debug_log('Plugin desactivado');
+    // Verificar versión mínima de PHP
+    if (version_compare(PHP_VERSION, '7.0.0', '<')) {
+        deactivate_plugins(plugin_basename(__FILE__));
+        wp_die('Este plugin requiere PHP 7.0 o superior.');
+    }
 });
 ?>
