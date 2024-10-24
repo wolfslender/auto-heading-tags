@@ -2,7 +2,7 @@
 /*
 Plugin Name: Auto Heading Tags by Hierarchy
 Description: Asigna automáticamente etiquetas H1, H2, H3, etc. a los títulos según su jerarquía
-Version: 1.5
+Version: 1.0.6
 Author: Alexis Olivero
 Web: www.oliverodev.com
 */
@@ -14,68 +14,43 @@ if (!defined('ABSPATH')) {
 
 class SimpleHeadingHierarchy {
     
-    private static $instance = null;
-    
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-    
-    private function __construct() {
+    public function __construct() {
         add_filter('the_content', array($this, 'process_headings'), 99);
     }
     
     public function process_headings($content) {
-        if (empty($content)) {
+        // Si no hay contenido o no hay encabezados, retornar el contenido original
+        if (empty($content) || !preg_match('/<h[1-6][^>]*>/i', $content)) {
             return $content;
         }
 
-        // Crear un DOM del contenido
-        $dom = new DOMDocument();
-        
-        // Preservar espacios en blanco
-        $dom->preserveWhiteSpace = true;
-        
-        // Evitar errores con caracteres especiales
-        $content = mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8');
-        
-        // Suprimir errores de warnings del DOM
-        libxml_use_internal_errors(true);
-        $dom->loadHTML($content, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-        libxml_clear_errors();
+        // Encontrar todos los encabezados con su contenido
+        $pattern = '/<h([1-6])(.*?)>(.*?)<\/h\1>/i';
+        preg_match_all($pattern, $content, $matches, PREG_SET_ORDER);
 
-        // Obtener todos los encabezados
-        $headings = array();
-        for ($i = 1; $i <= 6; $i++) {
-            $tags = $dom->getElementsByTagName('h' . $i);
-            foreach ($tags as $tag) {
-                $headings[] = $tag;
-            }
-        }
-
-        if (empty($headings)) {
+        if (empty($matches)) {
             return $content;
         }
 
-        // Procesar los encabezados
+        $has_h1 = false;
         $current_level = 1;
-        $found_h1 = false;
+        $replacements = array();
 
-        foreach ($headings as $heading) {
-            // Obtener el nivel actual del encabezado
-            $current_tag = $heading->nodeName;
-            $level = intval(substr($current_tag, 1));
+        // Procesar cada encabezado encontrado
+        foreach ($matches as $match) {
+            $original_tag = $match[0];         // Tag completo
+            $level = (int)$match[1];          // Nivel del encabezado (1-6)
+            $attributes = $match[2];          // Atributos HTML si existen
+            $content_text = $match[3];        // Contenido del encabezado
 
             // Manejar el primer H1
-            if ($level === 1 && !$found_h1) {
-                $found_h1 = true;
-                continue;
+            if ($level === 1 && !$has_h1) {
+                $has_h1 = true;
+                continue; // Mantener el primer H1 sin cambios
             }
 
-            // Determinar el nuevo nivel
-            if ($found_h1) {
+            // Determinar el nuevo nivel para los encabezados subsiguientes
+            if ($has_h1) {
                 if ($level <= $current_level) {
                     $current_level++;
                 }
@@ -84,34 +59,29 @@ class SimpleHeadingHierarchy {
                 $new_level = $level;
             }
 
-            // Crear nuevo elemento
-            $new_heading = $dom->createElement('h' . $new_level);
+            // Crear el nuevo tag
+            $new_tag = "<h{$new_level}{$attributes}>{$content_text}</h{$new_level}>";
             
-            // Copiar el contenido y atributos
-            while ($heading->childNodes->length > 0) {
-                $new_heading->appendChild($heading->childNodes->item(0));
-            }
-            foreach ($heading->attributes as $attribute) {
-                $new_heading->setAttribute($attribute->name, $attribute->value);
-            }
-
-            // Reemplazar el encabezado original
-            $heading->parentNode->replaceChild($new_heading, $heading);
+            // Almacenar el reemplazo
+            $replacements[$original_tag] = $new_tag;
         }
 
-        // Obtener el HTML resultante
-        $new_content = $dom->saveHTML();
-        
-        // Limpiar el HTML resultante
-        $new_content = preg_replace('/^<!DOCTYPE.+?>/', '', str_replace(array('<html>', '</html>', '<body>', '</body>'), array('', '', '', ''), $new_content));
-        
-        return trim($new_content);
+        // Realizar todos los reemplazos de una vez
+        if (!empty($replacements)) {
+            $content = str_replace(
+                array_keys($replacements),
+                array_values($replacements),
+                $content
+            );
+        }
+
+        return $content;
     }
 }
 
 // Inicializar el plugin
 function initialize_simple_heading_hierarchy() {
-    SimpleHeadingHierarchy::get_instance();
+    new SimpleHeadingHierarchy();
 }
 add_action('plugins_loaded', 'initialize_simple_heading_hierarchy');
 
