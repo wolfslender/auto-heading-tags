@@ -2,7 +2,7 @@
 /*
 Plugin Name: Auto Heading Tags by Hierarchy
 Description: Asigna automáticamente etiquetas H1, H2, H3, etc. a los títulos según su jerarquía
-Version: 1.0.6
+Version: 1.7
 Author: Alexis Olivero
 Web: www.oliverodev.com
 */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class SimpleHeadingHierarchy {
+class SequentialHeadingHierarchy {
     
     public function __construct() {
         add_filter('the_content', array($this, 'process_headings'), 99);
@@ -32,8 +32,8 @@ class SimpleHeadingHierarchy {
             return $content;
         }
 
-        $has_h1 = false;
         $current_level = 1;
+        $last_level = 1;
         $replacements = array();
 
         // Procesar cada encabezado encontrado
@@ -43,21 +43,22 @@ class SimpleHeadingHierarchy {
             $attributes = $match[2];          // Atributos HTML si existen
             $content_text = $match[3];        // Contenido del encabezado
 
-            // Manejar el primer H1
-            if ($level === 1 && !$has_h1) {
-                $has_h1 = true;
-                continue; // Mantener el primer H1 sin cambios
+            // Determinar el nuevo nivel
+            if ($level === 1) {
+                // Si es un H1, asignar el siguiente nivel disponible
+                $new_level = $current_level;
+                $current_level = min($current_level + 1, 6);
+            } else {
+                // Para otros niveles, mantener la jerarquía relativa
+                if ($level <= $last_level) {
+                    $new_level = min($current_level, 6);
+                    $current_level = min($current_level + 1, 6);
+                } else {
+                    $new_level = min($level + $current_level - 2, 6);
+                }
             }
 
-            // Determinar el nuevo nivel para los encabezados subsiguientes
-            if ($has_h1) {
-                if ($level <= $current_level) {
-                    $current_level++;
-                }
-                $new_level = min($current_level, 6);
-            } else {
-                $new_level = $level;
-            }
+            $last_level = $new_level;
 
             // Crear el nuevo tag
             $new_tag = "<h{$new_level}{$attributes}>{$content_text}</h{$new_level}>";
@@ -80,10 +81,10 @@ class SimpleHeadingHierarchy {
 }
 
 // Inicializar el plugin
-function initialize_simple_heading_hierarchy() {
-    new SimpleHeadingHierarchy();
+function initialize_sequential_heading_hierarchy() {
+    new SequentialHeadingHierarchy();
 }
-add_action('plugins_loaded', 'initialize_simple_heading_hierarchy');
+add_action('plugins_loaded', 'initialize_sequential_heading_hierarchy');
 
 // Activación del plugin
 register_activation_hook(__FILE__, function() {
