@@ -1,55 +1,96 @@
 <?php
 /*
 Plugin Name: Auto Heading Tags by Hierarchy
-Description: Asigna automáticamente etiquetas H1, H2, H3, etc. a los títulos dentro de una publicación según su jerarquía. Convierte automáticamente los títulos repetidos en el siguiente nivel jerárquico.
-Version: 1.4
+Description: Asigna automáticamente etiquetas H1, H2, H3, etc. a los títulos según su jerarquía
+Version: 1.5
 Author: Alexis Olivero
-web: www.oliverodev.com
+Web: www.oliverodev.com
 */
 
-if (!defined('ABSPATH')) exit; // Evita el acceso directo
+if (!defined('ABSPATH')) exit;
 
-// Función para aplicar jerarquía correcta a los encabezados H1, H2, H3, etc.
-function auto_heading_tags_by_hierarchy($content) {
-    // Expresión regular para detectar todos los encabezados <h1> a <h6>
-    $pattern = '/<h([1-6])>(.*?)<\/h\1>/i'; // Detecta todos los encabezados <h1>, <h2>, ..., <h6>
-    preg_match_all($pattern, $content, $matches);
-    
-    $has_h1 = false; // Variable para rastrear si ya existe un <h1>
-    $current_heading_level = 1; // Inicia desde H1 para el primer encabezado
-    
-    if (!empty($matches[0])) {
-        foreach ($matches[0] as $key => $original_tag) {
-            $original_level = (int) $matches[1][$key]; // Captura el nivel del encabezado original
-            
-            // Verifica si ya existe un <h1> en el contenido
-            if ($original_level == 1 && !$has_h1) {
-                $has_h1 = true; // Marca que el <h1> ya existe
-                $new_tag = $original_tag; // Deja el primer <h1> sin cambios
-            } else {
-                // Si el original es <h1> y ya existe uno, o es otro nivel
-                if ($original_level <= $current_heading_level) {
-                    $current_heading_level++; // Aumenta el nivel para mantener la jerarquía
-                }
-                
-                // Asegura que el nivel no sobrepase <h6>
-                if ($current_heading_level > 6) {
-                    $current_heading_level = 6;
-                }
-                
-                // Reemplaza el encabezado con el nuevo nivel
-                $new_tag = '<h' . $current_heading_level . '>' . $matches[2][$key] . '</h' . $current_heading_level . '>';
-            }
-            
-            // Reemplaza el encabezado original con el nuevo
-            $content = str_replace($original_tag, $new_tag, $content);
-        }
+// Añadir opciones de debug
+function auto_heading_tags_debug_log($message) {
+    if (WP_DEBUG === true) {
+        error_log('[Auto Heading Tags] ' . $message);
     }
-
-    return $content;
 }
 
-// Aplicar el filtro al contenido de las publicaciones
-add_filter('the_content', 'auto_heading_tags_by_hierarchy');
+function auto_heading_tags_by_hierarchy($content) {
+    try {
+        // Verificar si el contenido está vacío
+        if (empty($content)) {
+            auto_heading_tags_debug_log('Contenido vacío');
+            return $content;
+        }
 
+        // Patrón mejorado que considera atributos HTML
+        $pattern = '/<h([1-6])(.*?)>(.*?)<\/h\1>/i';
+        
+        if (!preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
+            auto_heading_tags_debug_log('No se encontraron encabezados');
+            return $content;
+        }
+
+        $has_h1 = false;
+        $current_heading_level = 1;
+        $processed_content = $content;
+        
+        // Array para almacenar los reemplazos
+        $replacements = [];
+
+        foreach ($matches as $match) {
+            $original_tag = $match[0];
+            $original_level = (int) $match[1];
+            $attributes = $match[2]; // Preservar atributos HTML
+            $heading_content = $match[3];
+
+            if ($original_level === 1 && !$has_h1) {
+                $has_h1 = true;
+                continue; // Mantener el primer H1 sin cambios
+            }
+
+            // Determinar nuevo nivel
+            if ($original_level <= $current_heading_level) {
+                $current_heading_level++;
+            }
+
+            // Limitar a H6
+            $new_level = min($current_heading_level, 6);
+
+            // Crear nuevo tag preservando atributos
+            $new_tag = "<h{$new_level}{$attributes}>{$heading_content}</h{$new_level}>";
+            
+            // Almacenar el reemplazo
+            $replacements[$original_tag] = $new_tag;
+        }
+
+        // Realizar todos los reemplazos de una vez
+        $processed_content = str_replace(
+            array_keys($replacements),
+            array_values($replacements),
+            $processed_content
+        );
+
+        auto_heading_tags_debug_log('Procesamiento completado exitosamente');
+        return $processed_content;
+
+    } catch (Exception $e) {
+        auto_heading_tags_debug_log('Error: ' . $e->getMessage());
+        return $content; // Devolver contenido original en caso de error
+    }
+}
+
+// Añadir el filtro con prioridad específica
+add_filter('the_content', 'auto_heading_tags_by_hierarchy', 20);
+
+// Función de activación del plugin
+register_activation_hook(__FILE__, function() {
+    auto_heading_tags_debug_log('Plugin activado');
+});
+
+// Función de desactivación del plugin
+register_deactivation_hook(__FILE__, function() {
+    auto_heading_tags_debug_log('Plugin desactivado');
+});
 ?>
