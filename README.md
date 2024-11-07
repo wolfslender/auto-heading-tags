@@ -34,3 +34,6 @@ This plugin is released under the MIT License.
 ## Support
 
 If you encounter any issues or have questions, feel free to open an issue on GitHub or contact me directly.
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fwolfslender%2Fauto-heading-tags.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fwolfslender%2Fauto-heading-tags?ref=badge_shield&issueType=license)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fwolfslender%2Fauto-heading-tags.svg?type=shield&issueType=security)](https://app.fossa.com/projects/git%2Bgithub.com%2Fwolfslender%2Fauto-heading-tags?ref=badge_shield&issueType=security)
