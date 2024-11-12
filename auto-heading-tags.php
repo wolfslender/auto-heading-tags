@@ -1,13 +1,13 @@
 <?php
 
 /*
-Plugin Name: Media Usage Checker
+Plugin Name: Auto Heading Tags
 Plugin URI: https://www.olivero.com/
-Description: Identifica qué archivos de la biblioteca de medios están en uso en el contenido de WordPress y permite eliminar los que no se usan.
-Version: 2.3.8
+Description: Plugin para Añadir Tags a los titutlos de wordpress de manera Jerarquica 
+Version: 1.0
 Author: Alexis Olivero
-Author URI: https://www.oliverodev.com/
 */
+
 // Evitar acceso directo al archivo
 if (!defined('ABSPATH')) {
     exit;
