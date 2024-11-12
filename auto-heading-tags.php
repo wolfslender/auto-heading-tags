@@ -1,12 +1,13 @@
 <?php
-/*
-Plugin Name: Auto Heading Tags by Hierarchy
-Description: Asigna automáticamente etiquetas H1, H2, H3, etc. a los títulos según su jerarquía
-Version: 1.8
-Author: Alexis Olivero
-Web: www.oliverodev.com
-*/
 
+/*
+Plugin Name: Media Usage Checker
+Plugin URI: https://www.olivero.com/
+Description: Identifica qué archivos de la biblioteca de medios están en uso en el contenido de WordPress y permite eliminar los que no se usan.
+Version: 2.3.8
+Author: Alexis Olivero
+Author URI: https://www.oliverodev.com/
+*/
 // Evitar acceso directo al archivo
 if (!defined('ABSPATH')) {
     exit;
