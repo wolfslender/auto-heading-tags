@@ -1,0 +1,134 @@
+.modern-toc-container {
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    margin: 20px 0;
+    padding: 1em;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+    position: relative;
+    border: 1px solid #ddd;
+}
+
+.modern-toc-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px;
+    padding: 2px;
+    background: linear-gradient(
+        45deg,
+        #4CAF50,  /* verde */
+        #2196F3,  /* azul */
+        #9C27B0,  /* morado */
+        #F44336,  /* rojo */
+        #FFC107,  /* amarillo */
+        #4CAF50   /* verde */
+    );
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+.modern-toc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: #f8f8f8;
+    border-bottom: 1px solid #ddd;
+}
+
+.modern-toc-title {
+    font-weight: bold;
+    font-size: 16px;
+    color: #2c3e50;
+}
+
+.modern-toc-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: transform 0.3s ease;
+    color: #333;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.modern-toc-toggle:hover {
+    background: rgba(0,0,0,0.05);
+    transform: scale(1.1);
+}
+
+.modern-toc-toggle:active {
+    background: #ddd;
+}
+
+.modern-toc-content {
+    max-height: 2000px; /* altura máxima arbitraria */
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    padding: 15px;
+}
+
+.modern-toc-content.show {
+    display: block;
+}
+
+.modern-toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.modern-toc-list li {
+    margin: 0.5em 0;
+    line-height: 1.4;
+}
+
+.modern-toc-list a {
+    display: block;
+    align-items: baseline;
+    color: #333;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-size: 0.95em;
+    padding: 5px 0;
+}
+
+.modern-toc-list a:hover {
+    color: #007bff;
+}
+
+.heading-number {
+    color: #666;
+    margin-right: 8px;
+    font-weight: normal;
+}
+
+.toc-number {
+    color: #666;
+    margin-right: 4px;
+    font-weight: normal;
+}
+
+@media (max-width: 768px) {
+    .modern-toc-content.collapsed {
+        display: none;
+    }
+}
